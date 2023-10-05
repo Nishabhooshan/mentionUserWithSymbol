@@ -17,15 +17,21 @@ code {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh; 
+  height: 100vh;
   background-color: #f0f0f0;
+  padding: 0 10px; /* Add horizontal padding to .center */
+  box-sizing: border-box; /* Ensure padding doesn't increase container width */
 }
+
 .large-input {
-  width: 600px;
+  width: 80%;
+  max-width: 100%; /* Allow .large-input to adapt to the container width */
   height: 60px;
   padding: 10px;
+  margin: 10px;
   font-size: 16px;
 }
+
 
 ul {
   list-style: none;
@@ -37,4 +43,11 @@ ul {
   background-color: #007BFF;
   color: #fff;
   border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .large-input {
+    width: 100%; 
+    max-width: none; 
+  }
 }

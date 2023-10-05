@@ -1,0 +1,7 @@
+[
+    { "id": 1, "name": "Luke Skywalker","username":"lucke_skywalker" },
+    { "id": 2, "name": "Nisha Bhooshan","username":"nisha_bhooshan" },
+    { "id": 3, "name": "Tenzin Wangdak","username":"tenzin_wangdak" },
+    { "id": 4, "name": "Han Solo","username":"han_solo" },
+    { "id": 5, "name": "Genelia","username":"geni" }
+  ]

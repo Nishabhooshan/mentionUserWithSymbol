@@ -1,5 +1,5 @@
 import './App.css';
-import MentionInput from './MentionInput';
+import MentionInput from './components/MentionInput';
 
 
 function App() {

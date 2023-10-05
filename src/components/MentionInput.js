@@ -1,90 +1,123 @@
-import React from 'react';
-import { render, fireEvent } from '@testing-library/react';
-import MentionInput from './MentionInput';
-import "@testing-library/jest-dom/extend-expect"
+import React, { useState, useEffect, useRef } from "react";
+import data from "../data/data.json";
 
-// Mock the data.json file
-jest.mock('../data/data.json', () => [
-  { id: 1, name: 'User1' },
-  { id: 2, name: 'User2' },
-  { id: 3, name: 'User3' },
-]);
+const MentionInput = () => {
+  const [inputText, setInputText] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const mentionRef = useRef(null);
 
-describe('MentionInput', () => {
-  it('renders without errors', () => {
-    const { getByPlaceholderText } = render(<MentionInput />);
-    const inputElement = getByPlaceholderText('Type @ to mention someone');
-    expect(inputElement).toBeInTheDocument();
-  });
+  useEffect(() => {
+    mentionRef.current.focus();
+    if (isMentionTriggered(inputText)) {
+      setShowDropdown(true);
+    } else {
+      setShowDropdown(false);
+    }
+   
+  }, [inputText, showDropdown]);
 
-  it('detects a mention trigger when typing "@"', () => {
-    const { getByPlaceholderText } = render(<MentionInput />);
-    const inputElement = getByPlaceholderText('Type @ to mention someone');
+  const isMentionTriggered = (inputText) => {
+    const res = inputText.includes(" @") || inputText.startsWith("@");
+    return res;
+  };
 
-    fireEvent.change(inputElement, { target: { value: '@' } });
+  const getUserName = (inputText) => {
+    if (isMentionTriggered(inputText)) {
+      const prefix = inputText.substring(inputText.lastIndexOf("@") + 1);
 
-    expect(inputElement.value).toBe('@');
-  });
+      if (typeof prefix !== "undefined") {
+        return prefix;
+      }
+    }
+    return "";
+  };
 
-  it('shows the dropdown when a mention trigger is detected', () => {
-    const { getByPlaceholderText, getByText } = render(<MentionInput />);
-    const inputElement = getByPlaceholderText('Type @ to mention someone');
+  const handleInputChange = (e) => {
+    const text = e.target.value;
+    setInputText(text);
+    setSelectedIndex(-1);
+   
+  };
 
-    fireEvent.change(inputElement, { target: { value: '@' } });
+  const handleKeyDown = (e) => {
+    if (showDropdown) {
+      if (e.key === "ArrowDown" && selectedIndex < filteredUsers.length - 1) {
+        setSelectedIndex(selectedIndex + 1);
+      } else if (e.key === "ArrowUp" && selectedIndex > 0) {
+        setSelectedIndex(selectedIndex - 1);
+      } else if (e.key === "Enter" && selectedIndex !== -1) {
+        e.preventDefault();
+        handleSelectMention(filteredUsers[selectedIndex].name);
+      }
+    }
+  };
 
-    const dropdownItem = getByText('User1'); // Assuming User1 is in the mocked data
-    expect(dropdownItem).toBeInTheDocument();
-  });
+  const handleSelectMention = (mention) => {
+    const regex = /(@[\w]+)/;
+    const matches = inputText.match(new RegExp(regex.source, "g"));
 
-  it('selects a mention from the dropdown', () => {
-    const { getByPlaceholderText, getByText } = render(<MentionInput />);
-    const inputElement = getByPlaceholderText('Type @ to mention someone');
+    if (matches) {
+      const lastIndex = inputText.lastIndexOf(matches[matches.length - 1]);
 
-    fireEvent.change(inputElement, { target: { value: '@' } });
+      let modifiedText = inputText.substring(0, lastIndex) + `@${mention} `;
 
-    const dropdownItem = getByText('User1'); // Assuming User1 is in the mocked data
+      setInputText(modifiedText);
+    } else {
+      setInputText(`@${mention} `);
+    }
 
-    fireEvent.click(dropdownItem);
+    setShowDropdown(false);
+    setSelectedIndex(-1);
+  };
+  const handleMouseEnter = (index) => {
+    setSelectedIndex(index);
+  };
 
-    expect(inputElement.value).toBe('@User1 ');
-  });
+  const prefix = getUserName(inputText);
+  let filteredUsers = data.filter(
+    (item) =>
+      prefix !== "" && item.name.toLowerCase().startsWith(prefix.toLowerCase())
+  );
+  if (filteredUsers.length === 0) {
+    filteredUsers = data;
+  }
 
-  it('navigates through dropdown items using arrow keys', () => {
-    const { getByPlaceholderText, getByText } = render(<MentionInput />);
-    const inputElement = getByPlaceholderText('Type @ to mention someone');
+  return (
+    <div className="center">
+      <input
+        className="large-input"
+        ref={mentionRef}
+        type="text"
+        value={inputText}
+        id="mention"
+        placeholder="Type @ to mention someone"
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+      />
+      <br />
+      
+      {showDropdown && (
+        <ul>
+          {filteredUsers.map((item, index) => (
+            <li
+              key={item.id}
+              onClick={() => handleSelectMention(item.name)}
+              onMouseEnter={() => handleMouseEnter(index)}
+              style={{
+                backgroundColor:
+                  selectedIndex === index ? "#007BFF" : "transparent",
+                color: selectedIndex === index ? "#fff" : "#333",
+              }}
+            >
+              {item.name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
 
-    fireEvent.change(inputElement, { target: { value: '@' } });
+export default MentionInput;
 
-    const firstDropdownItem = getByText('User1'); // Assuming User1 is in the mocked data
-    const secondDropdownItem = getByText('User2'); // Assuming User2 is in the mocked data
-
-    fireEvent.keyDown(inputElement, { key: 'ArrowDown' });
-    expect(secondDropdownItem).toHaveStyle('background-color: #007BFF');
-
-    fireEvent.keyDown(inputElement, { key: 'ArrowUp' });
-    expect(firstDropdownItem).toHaveStyle('background-color: #007BFF');
-  });
-
-  it('handles the Enter key to select a mention', () => {
-    const { getByPlaceholderText, getByText } = render(<MentionInput />);
-    const inputElement = getByPlaceholderText('Type @ to mention someone');
-
-    fireEvent.change(inputElement, { target: { value: '@' } });
-
-    const firstDropdownItem = getByText('User1'); // Assuming User1 is in the mocked data
-
-    fireEvent.keyDown(inputElement, { key: 'ArrowDown' });
-    fireEvent.keyDown(inputElement, { key: 'Enter' });
-
-    expect(inputElement.value).toBe('@User1 ');
-  });
-
-  it('handles input change', () => {
-    const { getByPlaceholderText } = render(<MentionInput />);
-    const inputElement = getByPlaceholderText('Type @ to mention someone');
-
-    fireEvent.change(inputElement, { target: { value: 'Hello' } });
-
-    expect(inputElement.value).toBe('Hello');
-  });
-});
